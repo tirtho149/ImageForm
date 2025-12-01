@@ -68,8 +68,8 @@
         investmentPercentage: ''
       })));
 
-      // UPDATED: New Google Apps Script Web App URL
-      const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxI2Xp374W3GIllVxiaNYa_Bd2QP4McoZrVxcmHQo3Rt7X0AGkwJt20KC6bepjroqpY/exec';
+      // Your deployed Google Apps Script Web App URL
+      const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyEdem8RWAPGaoMMy_GjNqA825xnIHc3-ABhSTCrD9UFCVR1y6HqPmK89PvuHISAkqoXg/exec';
 
       const assessmentCategories = {
         'Credibility': 'Appeals based on source expertise, trustworthiness, and authority',
@@ -91,7 +91,14 @@
         '4': 'Highly effective'
       };
 
-      // Load pitch content from GitHub Pages data directory
+      // CRITICAL FIX: Helper function to parse HTML-wrapped JSON response
+      const fetchAndParseJSON = async (url) => {
+        const response = await fetch(url);
+        const text = await response.text();
+        // The response is HTML containing JSON - parse it directly
+        return JSON.parse(text);
+      };
+
       const loadPitchContent = useCallback(async (pitchIds) => {
         const contents = [];
         for (const pitchId of pitchIds) {
@@ -124,7 +131,6 @@
         setPitchesContent(contents);
       }, []);
 
-      // Load saved state from localStorage on mount
       useEffect(() => {
         const loadSavedState = async () => {
           setIsLoading(true);
@@ -156,8 +162,10 @@
       const getNewPitches = async (email) => {
         try {
           console.log('Fetching pitches for:', email);
-          const response = await fetch(`${APPS_SCRIPT_URL}?action=getAvailablePitches&email=${encodeURIComponent(email)}`);
-          const data = await response.json();
+          // FIXED: Use fetchAndParseJSON helper
+          const data = await fetchAndParseJSON(
+            `${APPS_SCRIPT_URL}?action=getAvailablePitches&email=${encodeURIComponent(email)}`
+          );
           
           console.log('Server response:', data);
           
@@ -173,7 +181,7 @@
           }
         } catch (error) {
           console.error('Error fetching pitches:', error);
-          setStatus({ type: 'error', message: 'Failed to connect to server. Please try again.' });
+          setStatus({ type: 'error', message: 'Failed to connect to server. Please check your internet connection.' });
           return false;
         }
       };
@@ -219,7 +227,6 @@
         const sample = samplesData[sampleIndex];
 
         try {
-          // CHANGED: Use GET request with URL parameters instead of POST to avoid CORS
           const params = new URLSearchParams({
             action: 'submitRating',
             evaluatorId: evaluatorId,
@@ -229,7 +236,6 @@
             investmentAmount: pitchesContent[sampleIndex]?.loanAmount 
               ? (parseFloat(pitchesContent[sampleIndex].loanAmount) * parseInt(sample.investmentPercentage) / 100).toFixed(2)
               : '0',
-            // Flatten ratings into URL parameters
             economicCredibility: sample.economicCredibility,
             environmentalCredibility: sample.environmentalCredibility,
             socialCredibility: sample.socialCredibility,
@@ -241,16 +247,14 @@
             socialLogic: sample.socialLogic,
             economicTiming: sample.economicTiming,
             environmentalTiming: sample.environmentalTiming,
-            socialTiming: sample.socialTiming,
-            timestamp: new Date().toISOString()
+            socialTiming: sample.socialTiming
           });
 
           console.log('Submitting pitch data via GET');
 
-          const response = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
-
-          console.log('Response status:', response.status);
-          const result = await response.json();
+          // FIXED: Use fetchAndParseJSON helper
+          const result = await fetchAndParseJSON(`${APPS_SCRIPT_URL}?${params.toString()}`);
+          
           console.log('Server result:', result);
 
           if (result.success) {
@@ -457,7 +461,6 @@
               </div>
             </div>
 
-            {/* Pitch Display Section */}
             <div className={`mb-8 p-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg transition-opacity duration-300 ${fadeState === 'visible' ? 'opacity-100' : 'opacity-0'}`}>
               {currentPitch.image && (
                 <div className="mb-4">
@@ -483,7 +486,6 @@
                 {currentPitch.description || 'Loading pitch description...'}
               </p>
               
-              {/* Investment Percentage Selection */}
               {currentPitch.loanAmount && (
                 <div className="bg-white p-6 rounded-lg border-2 border-green-200 mt-4">
                   <label className="block text-lg font-semibold text-gray-800 mb-3">

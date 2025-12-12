@@ -486,12 +486,12 @@ if (response.ok) {
                   </video>
                 </div>
               )}
-              {currentPitch.image && (
-                <div className="mb-4">
+             {currentPitch.image && (
+                <div className="mb-4 flex justify-center">
                   <img 
                     src={currentPitch.image} 
                     alt={currentPitch.Name || 'Pitch image'}
-                    className="w-full max-h-96 object-contain rounded-lg shadow-md bg-gray-50"
+                    className="max-w-full h-auto max-h-96 object-contain rounded-lg shadow-md"
                   />
                 </div>
               )}
